@@ -27,6 +27,9 @@ class player:
     """ TODO: player will make a move. First decide wheather to end_my_turn/
     if no reroll_remaining, end_my_turn and send score to the server.
     Otherwise, We can assume player want to reroll at least some of dice."""
+
+
+    # p.make_move(False, 3, dice, [True, t, t, t, t])
     def make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool]):
         if reroll_remaining == 3:
             data = {
@@ -62,9 +65,7 @@ class player:
                 },
                 "MSG": "",
             }
-            json_data = json.dumps(data, indent = 4)
-            self.server.sendall(json_data.encode())
-            self.turn = False
+            
         else:
             # make user to chose which index they want to reroll
             data = {
@@ -75,9 +76,9 @@ class player:
                 },
                 "MSG": "",
             }
-            json_data = json.dumps(data, indent = 4)
-            self.server.sendall(json_data.encode())
-            return None
+        json_data = json.dumps(data, indent = 4)
+        self.server.sendall(json_data.encode())
+        return None
 
     
     """ TODO: Player will be shown the possible score board to choose from.
@@ -164,16 +165,13 @@ if __name__ == '__main__':
 
         # json_data = json.dumps(data, indent = 4)
         # server.sendall(json_data.encode())
-        
-        while True:
-            
-            data = server.recv(4096).decode()
-            p = player(server)
-            prev_data = None
-            try:
-                if prev_data != data:
-                    
+        p = player(server)
 
+        while True:
+            try:
+                data = server.recv(4096).decode()
+                prev_data = None  
+                if prev_data != data:
                     json_data = json.loads(data)
 
                     if json_data["STATUS"] == "PREGAME":
@@ -186,32 +184,30 @@ if __name__ == '__main__':
                         dice = json_data["DATA"]["dice"]
                         remain = json_data["DATA"]["remaining_roll"]
 
-                        while p.turn:
-                            if remain == 3:
-                                move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
-                                p.make_move(False, 3, dice, [True for i in range(5)])
+                        if remain == 3:
+                            move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
+                            p.make_move(False, 3, dice, [True for i in range(5)])
 
-                            elif remain == 1 or remain == 2:
-                                print("CHOOSE YOUR MOVE:\n")
-                                move = input("POSSIBLE MOVE: \n(0. REROLL) \n(1, STOP & SELECT SCORE) ")
-                                move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
-                                if move == 0:
-                                    while True:
-                                        print("Current Dice: ", dice)
-                                        print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
-                                        move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
-                                        print("IS THIS CORRECT:\n")
-                                        br = input(move.split(" "), "Y/N")
-                                        if br == "Y" or br == "y" or br == "Yes" or br == "yes":
-                                            break
-                                    
-                                    chosen_index = [int(i) for i in move.split(" ")]
-                                    p.make_move(False, remain, dice, [True for i in range(5) if i in chosen_index])
+                        elif remain == 1 or remain == 2:
+                            print("CHOOSE YOUR MOVE:\n")
+                            move = input("POSSIBLE MOVE: \n(0. REROLL) \n(1, STOP & SELECT SCORE) ")
+                            move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
+                            if move == 0:
+                                while True:
+                                    print("Current Dice: ", dice)
+                                    print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
+                                    move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
+                                    print("IS THIS CORRECT:\n")
+                                    br = input(move.split(" "), "Y/N")
+                                    if br == "Y" or br == "y" or br == "Yes" or br == "yes":
+                                        break
                                 
-                                else:
-                                    p.make_move(True, remain, dice, [False, False, False, False, False])
+                                chosen_index = [int(i) for i in move.split(" ")]
+                                p.make_move(False, remain, dice, [True for i in range(5) if i in chosen_index])
                             else:
-                                p.make_move(False, remain, dice, [False, False, False, False, False])
+                                p.make_move(True, remain, dice, [False, False, False, False, False])
+                        else:
+                            p.make_move(False, remain, dice, [False, False, False, False, False])
                             # p.make_move()
                     elif json_data["STATUS"] == "WAIT":
                         print("WAIT FOR THE OPPONENT TO END HIS/HER TURN")
@@ -221,8 +217,8 @@ if __name__ == '__main__':
                     elif json_data["STATUS"]  == "END":
                         print(json_data["MSG"])
                         break
+                    prev_data = data
                 
-                prev_data = data
 
             except json.JSONDecodeError:
                 print("Received Data is not in JSON format.")
