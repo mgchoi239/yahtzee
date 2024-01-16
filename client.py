@@ -3,22 +3,65 @@ import json
 from collections import Counter
 
 class player:
-
-    def __init__(self, player_turn):
+    def __init__(self, server):
         self.score: int = 0
         self.opponent_score: int = 0
         self.used_board_index = set()
         self.scoreboard: list[int] = []
-        self.player_turn: bool = player_turn
+        self.server = server
+        self.turn = False
+        
 
     """ TODO: player will make a move. First decide wheather to end_my_turn/
     if no reroll_remaining, end_my_turn and send score to the server.
     Otherwise, We can assume player want to reroll at least some of dice."""
     def make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool]):
-        if end_my_turn or not reroll_remaining:
+        if reroll_remaining == 3:
+            data = {
+                "STATUS": "ROLL",
+                "DATA": {
+                    "dice": [0,0,0,0,0],
+                    "index": [0,1,2,3,4],
+                },
+                "MSG": "",
+            }
+        
+        elif end_my_turn or not reroll_remaining:
             # have to make player choose score from possible_scores
             possible_scores = self.select_score(dice)
+            index = [i for i in range(12)]
+            possible_out = []
+            for i, score in zip(index, possible_scores):
+                if score != -1:
+                    possible_out.append([i, score])
+            print(possible_out.append([i, score]))
+            selected_score_index = input("Select Index: ")
+            selected_score = possible_scores[selected_score_index]
+            while selected_score_index < 0 or selected_score_index > 11 or selected_score_index in used_board_index:
+                print("Possible Index are:", [i for [i,k] in possible_out]) 
+                selected_score_index = input("Select different Index: ")
+                selected_score = possible_scores[selected_score_index]
+            data = {
+                "STATUS": "END TURN",
+                "DATA": {
+                    "index": selected_score_index,
+                    "score": selected_score,
+                },
+                "MSG": "",
+            }
+            json_data = json.dumps(data, indent = 4)
+            self.server.sendall(json_data.encode())
+            self.turn = False
         else:
+            # make user to chose which index they want to reroll
+            data = {
+                "STATUS": "ROLL",
+                "DATA": {
+                    "dice": [0,0,0,0,0],
+                    "index": [0,1,2,3,4],
+                },
+                "MSG": "",
+            }
             return None
 
     
@@ -84,7 +127,6 @@ class player:
 
 if __name__ == '__main__':
     # Player setup
-    
     SERVER_IP = "135.180.100.66"
     PORT = 3001
 
@@ -92,37 +134,41 @@ if __name__ == '__main__':
     try:
         server.connect((SERVER_IP, PORT))
         print("You Have Successfully Connected to the Server")
-        message = input("Enter Player Name: ")
+
+        data = server.recv(4096).decode()
+        p = player(server)
+
+        try:
+            json_data = json.loads(data)
+
+            if json_data.STATUS == "PREGAME":
+                print("WAITING FOR THE OPPONENT.")
+            elif json_data.STATUS == "TURN":
+                p.turn = True
+                while p.turn:
+                    if json_data.DATA.remaining_roll == 3:
+                        print("CHOOSE YOUR MOVE: ")
+                        move = input("POSSIBLE MOVE: (0. REROLL), (1, STOP & SELECT SCORE) ")
+                        move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
+                        if not move:
+                            print("WHICH INDEX WOULD YOU LIKE TO REROLL: ")
+                    elif json_data.DATA.remaining_roll == 1 or json_data.DATA.remaining_roll == 2:
+                        
+                        move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
+                    p.make_move()
+            elif json_data.STATUS == "WAIT":
+                print("WAIT FOR THE OPPONENT TO END HIS/HER TURN")
+            elif json_data.STATUS == "END":
+                print(json_data.MSG)
+        except json.JSONDecodeError:
+            print("Received Data is not in JSON format.")
+            
 
         # print("Waiting for Opponet...")
         # find a way to hold at this point
         
         # when server finds oppoents set two player's attribue (myturn) to True/False
-        my_turn = False # this need to be received by the server
-        p = player(my_turn)
-        winner = None
-
-        while not winner:
-            if my_turn:
-                p.make_move()
 
 
     except:
         print("You Have Failed to Connect")
-
-
-# import socket
-
-# # Player 2 setup
-# PLAYER1_IP = "135.180.100.66"
-# PORT = 3001       # Choose a port number
-
-# with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as player2_socket:
-#     player2_socket.connect((PLAYER1_IP, PORT))
-
-#     while True:
-#         message = input("Enter your move: ")
-#         player2_socket.sendall(message.encode())
-
-#         data = player2_socket.recv(1024).decode()
-#         print(f"Player 2: Received - {data}")
