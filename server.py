@@ -88,6 +88,13 @@ class Game:
         self.player_count: int = player_count
         self.scoreboard: list(int) = scoreboard
         
+
+async def send_message(writer, message):
+    # Encode the message as JSON and send it to the client
+    encoded_message = json.dumps(message, indent = 4).encode()
+    writer.write(encoded_message)
+    await writer.drain()        
+        
 async def handle_client(reader, writer, client_id, turn_user):
     while True:
         try:
@@ -120,6 +127,7 @@ async def handle_client(reader, writer, client_id, turn_user):
             break
     writer.close()
 
+
 async def start_server(game):
     host = '0.0.0.0'
     port_base = 3000
@@ -130,7 +138,19 @@ async def start_server(game):
         nonlocal client_id
         client_id += 1
         print(f"Accepted connection from {writer.get_extra_info('peername')}")
+        await send_message(writer, {
+            "STATUS": "PREGAME",
+            "DATA":"", 
+            "MSG":"Waiting for other players..."
+        })
+        await send_message(writer, {
+            "STATUS": "TURN",
+            "DATA":{"remaining_roll":"3", "dice":"[1,2,3,4,5,5]"}, 
+            "MSG":"Currently player 1's turn..."
+        })
+        
         await handle_client(reader, writer, client_id, turn)
+        
         
     server = await asyncio.start_server(on_client_connected, host, port_base)
 
@@ -138,5 +158,5 @@ async def start_server(game):
         await server.serve_forever()
 
 if __name__ == '__main__':
-    game = Game(2)
+    game = Game(2, [])
     asyncio.run(start_server(game))
