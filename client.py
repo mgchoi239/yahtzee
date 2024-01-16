@@ -21,7 +21,7 @@ class player:
                 "STATUS": "ROLL",
                 "DATA": {
                     "dice": [0,0,0,0,0],
-                    "index": [0,1,2,3,4],
+                    "index": [True, True, True, True, True],
                 },
                 "MSG": "",
             }
@@ -37,7 +37,7 @@ class player:
             print(possible_out.append([i, score]))
             selected_score_index = input("Select Index: ")
             selected_score = possible_scores[selected_score_index]
-            while selected_score_index < 0 or selected_score_index > 11 or selected_score_index in used_board_index:
+            while selected_score_index < 0 or selected_score_index > 11 or selected_score_index in self.used_board_index:
                 print("Possible Index are:", [i for [i,k] in possible_out]) 
                 selected_score_index = input("Select different Index: ")
                 selected_score = possible_scores[selected_score_index]
@@ -143,31 +143,46 @@ if __name__ == '__main__':
         try:
             json_data = json.loads(data)
 
-            if json_data.STATUS == "PREGAME":
+            if json_data["STATUS"] == "PREGAME":
                 print("WAITING FOR THE OPPONENT.")
-            elif json_data.STATUS == "TURN":
+            
+            elif json_data["STATUS"] == "TURN":
                 p.turn = True
                 
                 # make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool])
+                dice = json_data["DATA"]["dice"]
+                remain = json_data["DATA"]["remaining_roll"]
+
                 while p.turn:
-                    if json_data.DATA.remaining_roll == 3:
+                    if remain == 3:
                         move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
                         p.make_move(False, 3, [], [])
 
-                    elif json_data.DATA.remaining_roll == 1 or json_data.DATA.remaining_roll == 2:
+                    elif remain == 1 or remain == 2:
                         print("CHOOSE YOUR MOVE:\n")
                         move = input("POSSIBLE MOVE: \n(0. REROLL) \n(1, STOP & SELECT SCORE) ")
                         move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
-                        if not move:
-                            print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
-                            move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
-                            print("IS THIS CORRECT: ")
+                        if move == 0:
+                            while True:
+                                print("Current Dice: ", dice)
+                                print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
+                                move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
+                                print("IS THIS CORRECT:\n")
+                                br = input(move.split(" "), "Y/N")
+                                if br == "Y" or br == "y" or br == "Yes" or br == "yes":
+                                    break
+                            
+                            chosen_index = [int(i) for i in move.split(" ")]
+                            p.make_move(False, remain, dice, [True for i in range(5) if i in chosen_index])
+                        
                         else:
-                            print("need some work.")
+                            p.make_move(True, remain, dice, [False, False, False, False, False])
+                    else:
+                        p.make_move(False, remain, dice, [False, False, False, False, False])
                     # p.make_move()
-            elif json_data.STATUS == "WAIT":
+            elif json_data["STATUS"] == "WAIT":
                 print("WAIT FOR THE OPPONENT TO END HIS/HER TURN")
-            elif json_data.STATUS == "END":
+            elif json_data["STATUS"]  == "END":
                 print(json_data.MSG)
         except json.JSONDecodeError:
             print("Received Data is not in JSON format.")
