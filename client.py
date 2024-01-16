@@ -164,60 +164,68 @@ if __name__ == '__main__':
 
         # json_data = json.dumps(data, indent = 4)
         # server.sendall(json_data.encode())
-
-        data = server.recv(4096).decode()
-        # print("Hello World", data["MSG"])
-
-        p = player(server)
-
-        try:
-            json_data = json.loads(data)
-
-            if json_data["STATUS"] == "PREGAME":
-                print("WAITING FOR THE OPPONENT.")
+        
+        while True:
             
-            elif json_data["STATUS"] == "TURN":
-                p.turn = True
-                
-                # make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool])
-                dice = json_data["DATA"]["dice"]
-                remain = json_data["DATA"]["remaining_roll"]
+            data = server.recv(4096).decode()
+            p = player(server)
+            prev_data = None
+            try:
+                if prev_data != data:
+                    
 
-                while p.turn:
-                    if remain == 3:
-                        move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
-                        p.make_move(False, 3, [], [])
+                    json_data = json.loads(data)
 
-                    elif remain == 1 or remain == 2:
-                        print("CHOOSE YOUR MOVE:\n")
-                        move = input("POSSIBLE MOVE: \n(0. REROLL) \n(1, STOP & SELECT SCORE) ")
-                        move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
-                        if move == 0:
-                            while True:
-                                print("Current Dice: ", dice)
-                                print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
-                                move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
-                                print("IS THIS CORRECT:\n")
-                                br = input(move.split(" "), "Y/N")
-                                if br == "Y" or br == "y" or br == "Yes" or br == "yes":
-                                    break
-                            
-                            chosen_index = [int(i) for i in move.split(" ")]
-                            p.make_move(False, remain, dice, [True for i in range(5) if i in chosen_index])
+                    if json_data["STATUS"] == "PREGAME":
+                        print("WAITING FOR THE OPPONENT.")
+                    
+                    elif json_data["STATUS"] == "TURN":
+                        p.turn = True
                         
-                        else:
-                            p.make_move(True, remain, dice, [False, False, False, False, False])
-                    else:
-                        p.make_move(False, remain, dice, [False, False, False, False, False])
-                    # p.make_move()
-            elif json_data["STATUS"] == "WAIT":
-                print("WAIT FOR THE OPPONENT TO END HIS/HER TURN")
+                        # make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool])
+                        dice = json_data["DATA"]["dice"]
+                        remain = json_data["DATA"]["remaining_roll"]
 
-                """TODO: Need to work on updating and displaying Opponents' progress"""
+                        while p.turn:
+                            if remain == 3:
+                                move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
+                                p.make_move(False, 3, [], [])
 
-            elif json_data["STATUS"]  == "END":
-                print(json_data["MSG"])
-        except json.JSONDecodeError:
-            print("Received Data is not in JSON format.")
+                            elif remain == 1 or remain == 2:
+                                print("CHOOSE YOUR MOVE:\n")
+                                move = input("POSSIBLE MOVE: \n(0. REROLL) \n(1, STOP & SELECT SCORE) ")
+                                move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
+                                if move == 0:
+                                    while True:
+                                        print("Current Dice: ", dice)
+                                        print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
+                                        move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
+                                        print("IS THIS CORRECT:\n")
+                                        br = input(move.split(" "), "Y/N")
+                                        if br == "Y" or br == "y" or br == "Yes" or br == "yes":
+                                            break
+                                    
+                                    chosen_index = [int(i) for i in move.split(" ")]
+                                    p.make_move(False, remain, dice, [True for i in range(5) if i in chosen_index])
+                                
+                                else:
+                                    p.make_move(True, remain, dice, [False, False, False, False, False])
+                            else:
+                                p.make_move(False, remain, dice, [False, False, False, False, False])
+                            # p.make_move()
+                    elif json_data["STATUS"] == "WAIT":
+                        print("WAIT FOR THE OPPONENT TO END HIS/HER TURN")
+
+                        """TODO: Need to work on updating and displaying Opponents' progress"""
+
+                    elif json_data["STATUS"]  == "END":
+                        print(json_data["MSG"])
+                        break
+                
+                prev_data = data
+
+            except json.JSONDecodeError:
+                print("Received Data is not in JSON format.")
+                break
     except:
         print("You Have Failed to Connect")
