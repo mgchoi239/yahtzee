@@ -145,9 +145,8 @@ if __name__ == '__main__':
     SERVER_IP = "135.180.100.66"
     PORT = 3000
 
-    test = player("server")
-    print(test.make_move(True, 1, [1,1,2,3,6], [False,False,False,False,False]))
-    print("fuck")
+    # test = player("server")
+    # print(test.make_move(False, 1, [1,1,2,3,6], [False,False,False,False,False]))
 
     # data = {
     #             "STATUS": "ROLL",
