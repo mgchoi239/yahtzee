@@ -189,7 +189,7 @@ if __name__ == '__main__':
                         while p.turn:
                             if remain == 3:
                                 move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
-                                p.make_move(False, 3, [], [])
+                                p.make_move(False, 3, dice, [True for i in range(5)])
 
                             elif remain == 1 or remain == 2:
                                 print("CHOOSE YOUR MOVE:\n")
