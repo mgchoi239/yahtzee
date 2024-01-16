@@ -145,7 +145,7 @@ async def start_server(game):
         })
         await send_message(writer, {
             "STATUS": "TURN",
-            "DATA":{"remaining_roll":"3", "dice":"[1,2,3,4,5,5]"}, 
+            "DATA":{"remaining_roll":3, "dice":[1,2,3,4,5,5]}, 
             "MSG":"Currently player 1's turn..."
         })
         
