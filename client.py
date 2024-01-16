@@ -57,11 +57,13 @@ class player:
             data = {
                 "STATUS": "ROLL",
                 "DATA": {
-                    "dice": [0,0,0,0,0],
-                    "index": [0,1,2,3,4],
+                    "dice": dice,
+                    "index": reroll_dice,
                 },
                 "MSG": "",
             }
+            json_data = json.dumps(data, indent = 4)
+            self.server.sendall(json_data.encode())
             return None
 
     
@@ -145,30 +147,30 @@ if __name__ == '__main__':
                 print("WAITING FOR THE OPPONENT.")
             elif json_data.STATUS == "TURN":
                 p.turn = True
+                
+                # make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool])
                 while p.turn:
                     if json_data.DATA.remaining_roll == 3:
-                        print("CHOOSE YOUR MOVE: ")
-                        move = input("POSSIBLE MOVE: (0. REROLL), (1, STOP & SELECT SCORE) ")
+                        move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
+                        p.make_move(False, 3, [], [])
+
+                    elif json_data.DATA.remaining_roll == 1 or json_data.DATA.remaining_roll == 2:
+                        print("CHOOSE YOUR MOVE:\n")
+                        move = input("POSSIBLE MOVE: \n(0. REROLL) \n(1, STOP & SELECT SCORE) ")
                         move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
                         if not move:
-                            print("WHICH INDEX WOULD YOU LIKE TO REROLL: ")
-                    elif json_data.DATA.remaining_roll == 1 or json_data.DATA.remaining_roll == 2:
-                        
-                        move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
-                    p.make_move()
+                            print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
+                            move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
+                            print("IS THIS CORRECT: ")
+                        else:
+                            print("need some work.")
+                    # p.make_move()
             elif json_data.STATUS == "WAIT":
                 print("WAIT FOR THE OPPONENT TO END HIS/HER TURN")
             elif json_data.STATUS == "END":
                 print(json_data.MSG)
         except json.JSONDecodeError:
             print("Received Data is not in JSON format.")
-            
-
-        # print("Waiting for Opponet...")
-        # find a way to hold at this point
-        
-        # when server finds oppoents set two player's attribue (myturn) to True/False
-
 
     except:
         print("You Have Failed to Connect")
