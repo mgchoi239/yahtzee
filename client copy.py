@@ -1,6 +1,5 @@
 import socket
 import json
-import asyncio
 from collections import Counter
 
 class player:
@@ -140,9 +139,9 @@ class player:
                     yacht_scoreboard[i] = 50 if len(Counter(dice)) == 1 else 0
 
         return yacht_scoreboard
+        
 
-
-async def main():
+if __name__ == '__main__':
     # Player setup
     SERVER_IP = "135.180.100.66"
     PORT = 3000
@@ -159,147 +158,70 @@ async def main():
     #             "MSG": "",
     #         }
 
-    # reader, writer = await asyncio.open_connection(SERVER_IP, PORT)
-    
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        server.connect((SERVER_IP, PORT))
+        print("You Have Successfully Connected to the Server")
 
         # json_data = json.dumps(data, indent = 4)
         # server.sendall(json_data.encode())
-    # p = player(server)
+        p = player(server)
 
-    while True:
-        reader, writer = await asyncio.open_connection('127.0.0.1', 3000)
-        print("You Have Successfully Connected to the Server")
-        
-        message = "testing"
-        writer.write(message.encode())
-        await writer.drain()
+        while True:
+            try:
+                data = server.recv(4096).decode()
+                prev_data = None  
+                if prev_data != data:
+                    json_data = json.loads(data)
 
-        print("SENT " + message)
-
-        data = await reader.read(100)
-        new_message = data.decode()
-
-        # json_msg = json.loads(new_message)
-
-        print("RECEIVED :" + new_message)
-
-        writer.close()
-        await writer.wait_closed()
-
-        await asyncio.sleep(1) 
-        
-        
-        # try:
-        #     json_data = await receive_message(reader)
-            
-        #     if json_data["STATUS"] == "PREGAME":
-        #         print("WAITING FOR THE OPPONENT.")
-                
-        #     elif json_data["STATUS"] == "TURN":
-        #         print("TURN")
-        #         p.turn = True
-        #         dice = json_data["DATA"]["dice"]
-        #         remain = json_data["DATA"]["remaining_roll"]
-
-        #         if remain == 3:
-        #             move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
-        #             p.make_move(False, 3, dice, [True for i in range(5)])
-        #         elif remain == 1 or remain == 2:
-        #             print("CHOOSE YOUR MOVE:\n")
-        #             move = input("POSSIBLE MOVE: \n(0. REROLL) \n(1, STOP & SELECT SCORE) ")
-        #             move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
-        #             if move == 0:
-        #                 while True:
-        #                     print("Current Dice: ", dice)
-        #                     print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
-        #                     move = input("PLEASE INPUT EACH INDEX SEPARATED WITH SPACE: ")
-        #                     print("IS THIS CORRECT:\n")
-        #                     br = input(f"{move} Y/N")
-        #                     if br == "Y" or br == "y" or br == "Yes" or br == "yes":
-        #                         break
-
-        #                 chosen_index = [int(i) for i in move.split(" ")]
-        #                 p.make_move(False, remain, dice, [True for i in range(5) if i in chosen_index])
-        #             else:
-        #                 p.make_move(True, remain, dice, [False, False, False, False, False])
-        #         else:
-        #             p.make_move(False, remain, dice, [False, False, False, False, False])
-        #     elif json_data["STATUS"] == "WAIT":
-        #         print("WAIT FOR THE OPPONENT TO END HIS/HER TURN")
-        #         """TODO: Need to work on updating and displaying Opponents' progress"""
-        #     elif json_data["STATUS"] == "END":
-        #         print(json_data["MSG"])
-        #         break
-
-        # except Exception as e:
-        #     print(f"An error occurred: {e}")
-        #     break
-            # try:
-                
-            #     data = await asyncio.to_thread(server.recv, 4096)
-            #     data_str = data.decode()
-            #     prev_data = None
-                
-            #     try:
-            #         json_data = json.loads(data_str)
-            #     except json.JSONDecodeError:
-            #         print("Received Data is not in JSON format.")
-            #         break                
-                
-            #     if prev_data != data:
-            #         json_data = json.loads(data)
-
-            #         if json_data["STATUS"] == "PREGAME":
-            #             print("WAITING FOR THE OPPONENT.")
+                    if json_data["STATUS"] == "PREGAME":
+                        print("WAITING FOR THE OPPONENT.")
                     
-            #         elif json_data["STATUS"] == "TURN":
-            #             print("TURN")
-            #             p.turn = True
+                    elif json_data["STATUS"] == "TURN":
+                        p.turn = True
                         
-            #             # make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool])
-            #             dice = json_data["DATA"]["dice"]
-            #             remain = json_data["DATA"]["remaining_roll"]
+                        # make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool])
+                        dice = json_data["DATA"]["dice"]
+                        remain = json_data["DATA"]["remaining_roll"]
 
-            #             if remain == 3:
-            #                 move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
-            #                 p.make_move(False, 3, dice, [True for i in range(5)])
+                        if remain == 3:
+                            move = input("CHOOSE YOUR MOVE: POSSIBLE MOVE: (0. ROLL): ")
+                            p.make_move(False, 3, dice, [True for i in range(5)])
 
-            #             elif remain == 1 or remain == 2:
-            #                 print("CHOOSE YOUR MOVE:\n")
-            #                 move = input("POSSIBLE MOVE: \n(0. REROLL) \n(1, STOP & SELECT SCORE) ")
-            #                 move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
-            #                 if move == 0:
-            #                     while True:
-            #                         print("Current Dice: ", dice)
-            #                         print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
-            #                         move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
-            #                         print("IS THIS CORRECT:\n")
-            #                         br = input(move.split(" "), "Y/N")
-            #                         if br == "Y" or br == "y" or br == "Yes" or br == "yes":
-            #                             break
+                        elif remain == 1 or remain == 2:
+                            print("CHOOSE YOUR MOVE:\n")
+                            move = input("POSSIBLE MOVE: \n(0. REROLL) \n(1, STOP & SELECT SCORE) ")
+                            move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
+                            if move == 0:
+                                while True:
+                                    print("Current Dice: ", dice)
+                                    print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
+                                    move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
+                                    print("IS THIS CORRECT:\n")
+                                    br = input(move.split(" "), "Y/N")
+                                    if br == "Y" or br == "y" or br == "Yes" or br == "yes":
+                                        break
                                 
-            #                     chosen_index = [int(i) for i in move.split(" ")]
-            #                     p.make_move(False, remain, dice, [True for i in range(5) if i in chosen_index])
-            #                 else:
-            #                     p.make_move(True, remain, dice, [False, False, False, False, False])
-            #             else:
-            #                 p.make_move(False, remain, dice, [False, False, False, False, False])
-            #                 # p.make_move()
-            #         elif json_data["STATUS"] == "WAIT":
-            #             print("WAIT FOR THE OPPONENT TO END HIS/HER TURN")
+                                chosen_index = [int(i) for i in move.split(" ")]
+                                p.make_move(False, remain, dice, [True for i in range(5) if i in chosen_index])
+                            else:
+                                p.make_move(True, remain, dice, [False, False, False, False, False])
+                        else:
+                            p.make_move(False, remain, dice, [False, False, False, False, False])
+                            # p.make_move()
+                    elif json_data["STATUS"] == "WAIT":
+                        print("WAIT FOR THE OPPONENT TO END HIS/HER TURN")
 
-            #             """TODO: Need to work on updating and displaying Opponents' progress"""
+                        """TODO: Need to work on updating and displaying Opponents' progress"""
 
-            #         elif json_data["STATUS"]  == "END":
-            #             print(json_data["MSG"])
-            #             break
-            #         prev_data = data
+                    elif json_data["STATUS"]  == "END":
+                        print(json_data["MSG"])
+                        break
+                    prev_data = data
                 
 
-            # except Exception as e:
-            #     print(f"An error occurred: {e}")
-            #     break
-
-
-if __name__ == '__main__':
-    asyncio.run(main())
+            except json.JSONDecodeError:
+                print("Received Data is not in JSON format.")
+                break
+    except:
+        print("You Have Failed to Connect")
