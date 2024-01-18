@@ -37,7 +37,6 @@ import json
 from player import Player
 from collections import Counter
 
-
 if __name__ == '__main__':
     # Player setup
     SERVER_IP = "127.0.0.1"
@@ -63,9 +62,10 @@ if __name__ == '__main__':
         # json_data = json.dumps(data, indent = 4)
         # server.sendall(json_data.encode())
         p = Player(server)
+
         ip = socket.gethostbyname(socket.gethostname())
         server.sendall(f"Connected ACK from {ip}".encode())
-
+        
         while True:
             try:
                 data = server.recv(4096).decode()
