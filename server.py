@@ -1,162 +1,101 @@
-# import socket
-# import json
-# import asyncio
-
-# class Game:
-#     def __init__(self, player):
-#         self.player_count: int = player
-
-# def handle_player(connections, i):
-#     PORT = 3000+i
-#     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as player_socket:
-#         player_socket.bind(('0.0.0.0', PORT))
-#         player_socket.listen()
-
-#         print(f"Player {i} listening on port {PORT}")
-#         # Accept connection from Player X
-#         conn, addr = player_socket.accept()
-#         with conn:
-#             print(f"Player {i} connected by {addr} via {PORT}")
-
-#             info = {
-#                 "STATUS": "PREGAME",
-#                 "DATA":"", 
-#                 "MSG":"Waiting for other players..."
-#             }
-#             conn.sendall(json.dumps(info, indent = 4).encode())
-    
-#         connections.append(conn)
-
-
-# def start_server(game):
-#     connections = []
-#     for i in range(game.player_count):
-#         handle_player(connections, i)
-#     return connections
-
-# if __name__ == '__main__':
-#     game = Game(1)
-#     asyncio.run(start_server(game))
-#     # connections = 
-#     while True:
-#         for connect in connections:
-#             data = connect.recv(1024).decode()
-#             print(f"Player 1: {data}")
-
-# import socket
-
-
-# # Player 1 setup
-# PORT = 3000       # Choose a port number
-
-
-# with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as player1_socket:
-#     player1_socket.bind(('0.0.0.0', PORT))
-#     player1_socket.listen()
-
-
-#     print(f"Player 1 listening on port {PORT}")
-
-
-#    # Accept connection from Player 1
-#     conn1, addr1 = player1_socket.accept()
-#     with conn1:
-#         print(f"Player 1 connected by {addr1}")
-
-#         while True:
-#             # Player 1 receives data
-#             data1 = conn1.recv(4096).decode()
-#             if not data1:
-#                 break
-
-#             info = {
-#                 "STATUS": "PREGAME",
-#                 "DATA":"", 
-#                 "MSG":"Waiting for other players..."
-#             }
-#             conn1.sendall(json.dumps(info).encode())
-                
-#             print(f"Player 1: {data1}")
-               
-               
 import socket
+import threading
+import time
+import itertools
+import random
 import json
-import asyncio
+from typing import List
 
 class Game:
-    def __init__(self, player_count, scoreboard):
-        self.player_count: int = player_count
-        self.scoreboard: list(int) = scoreboard
-        
+    def __init__(self, total_users: int):
+        self.total_users = total_users
+        self.uuid = 0
+        self.turns = itertools.cycle([i for i in range(1, total_users+1)])
+        self.turn = next(self.turns)
+        self.connections = {}
 
-async def send_message(writer, message):
-    # Encode the message as JSON and send it to the client
-    encoded_message = json.dumps(message, indent = 4).encode()
-    writer.write(encoded_message)
-    await writer.drain()        
-        
-async def handle_client(reader, writer, client_id, turn_user):
-    while True:
-        try:
-            # Read data from the client
-            data = await reader.read(100)
+    def roll(self, dices: List[int], indices: List[int]):
+        for i in indices:
+            dices[i] = random.randint(1, 6)
+        return dices
+    
+    def end_turn(self):
+        self.turn = next(self.turns)
+
+class ServerData:
+    def __init__(self, status: str, remaining_roll=None, dice=None):
+        self.status = status
+        self.data = {}
+        self.msg = None
+        match status:
+            case "PREGAME":
+                self.msg = "Waiting for other players..."
+            case "TURN":
+                self.data["remaining_roll"]=remaining_roll
+                self.data["dice"]=dice
+                self.msg = f"You have {remaining_roll} remaining"
+            case "WAIT":
+                self.remaining_roll = remaining_roll
+                self.dice = dice
+                self.msg = f"Currently other player's roll"
+            case "END":
+                self.msg = "You won!"
+    
+    def encode_server_data(self):
+        data = {"STATUS":self.status, "DATA":self.data, "MSG":self.msg}
+        json_data = json.dumps(data, indent = 4) 
+        return json_data.encode()
+
+def handle_client(client_socket, client_address, uuid):
+    try:
+        while True:
+            data = client_socket.recv(1024)
             if not data:
-                print(f"Client {client_id} disconnected.")
                 break
+            print(data.decode())
+            if game.uuid < game.total_users:
+                data = ServerData("PREGAME")
+                client_socket.sendall(data.encode_server_data())
+            else:
+                if game.turn == uuid:
+                    data = ServerData("TURN", 3, [1,2,3,4,5])
+                    client_socket.sendall(data.encode_server_data())
+                else:
+                    data = ServerData("WAIT", 3, [1,2,3,4,5])
+                    client_socket.sendall(data.encode_server_data())
 
-            # Decode the received data
-            message = data.decode()
-            print(f"Received from Client {client_id}: {message}")
+            time.sleep(1)
 
-            info = {
-                "STATUS": "PREGAME",
-                "DATA":"", 
-                "MSG":"Waiting for other players..."
-            }
+    finally:
+        print(f"Closing connection with user{uuid} on {client_address}.")
+        client_socket.close()
 
-            # Respond to the client
-            writer.write(json.dumps(info, indent = 4).encode())
-            await writer.drain()
-            
-        except asyncio.CancelledError:
-            print("Cancelled event")
-            break
-        
-        except Exception as e:
-            print(f"Error handling client {client_id}: {e}")
-            break
-    writer.close()
+def run_server():
+    IP, PORT = '127.0.0.1', 3000
+    
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((IP, PORT))
+    server_socket.listen(5)
 
+    print("Server Initialized on 3000")
 
-async def start_server(game):
-    host = '0.0.0.0'
-    port_base = 3000
-    client_id = 0
-    turn = 1
+    try:
+        while game.uuid < game.total_users:
+            client_socket, client_address = server_socket.accept()
+            print(f"Accepted connection from {client_address}")
 
-    async def on_client_connected(reader, writer):
-        nonlocal client_id
-        client_id += 1
-        print(f"Accepted connection from {writer.get_extra_info('peername')}")
-        await send_message(writer, {
-            "STATUS": "PREGAME",
-            "DATA":"", 
-            "MSG":"Waiting for other players..."
-        })
-        await send_message(writer, {
-            "STATUS": "TURN",
-            "DATA":{"remaining_roll":3, "dice":[1,2,3,4,5,5]}, 
-            "MSG":"Currently player 1's turn..."
-        })
-        
-        await handle_client(reader, writer, client_id, turn)
-        
-        
-    server = await asyncio.start_server(on_client_connected, host, port_base)
+            game.uuid += 1
 
-    async with server:
-        await server.serve_forever()
+            client_handler = threading.Thread(target=handle_client, args=(client_socket, client_address, game.uuid))
+            client_handler.start()
+
+    except KeyboardInterrupt:
+        print("Server shutting down.")
+    finally:
+        # Close the server socket
+        server_socket.close()
 
 if __name__ == '__main__':
-    game = Game(2, [])
-    asyncio.run(start_server(game))
+    global game
+    game = Game(2)
+    run_server()

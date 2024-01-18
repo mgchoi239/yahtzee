@@ -1,12 +1,45 @@
+# import socket
+# import time
+
+# def run_client():
+#     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     client_socket.connect(('127.0.0.1', 3000))
+
+#     try:
+#         while True:
+#             client_socket.sendall("hi from Berkeley".encode())
+#             # Get player's move (rock, paper, scissors, or exit) from user input
+#             # move = input(f"{player_name}, enter your move (rock, paper, scissors, or exit to leave): ")
+
+#             # Send the move to the server
+#             # client_socket.sendall(move.encode())
+#             # print(f"Sent to server: {move}")
+
+#             # Receive and print the server's response
+#             response = client_socket.recv(1024).decode()
+#             print(f"Received from server: {response}")
+
+#             # if move.lower() == "exit":
+#                 # break  # If the player exits, end the game for that player
+
+#             # Simulate a delay (1 second) before the next move
+            
+
+#     finally:
+#         print(f"Closing connection with the server.")
+#         client_socket.close()
+
+# if __name__ == '__main__':
+#     run_client()
+    
 import socket
 import json
 from player import Player
 from collections import Counter
 
-
 if __name__ == '__main__':
     # Player setup
-    SERVER_IP = "135.180.100.66"
+    SERVER_IP = "127.0.0.1"
     PORT = 3000
 
     # test = player("server")
@@ -30,10 +63,14 @@ if __name__ == '__main__':
         # server.sendall(json_data.encode())
         p = Player(server)
 
+        ip = socket.gethostbyname(socket.gethostname())
+        server.sendall(f"Connected ACK from {ip}".encode())
+        
         while True:
             try:
                 data = server.recv(4096).decode()
                 prev_data = None  
+                print("not here?")
                 if prev_data != data:
                     json_data = json.loads(data)
 
