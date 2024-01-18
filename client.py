@@ -27,9 +27,6 @@ class player:
     """ TODO: player will make a move. First decide wheather to end_my_turn/
     if no reroll_remaining, end_my_turn and send score to the server.
     Otherwise, We can assume player want to reroll at least some of dice."""
-
-
-    # p.make_move(False, 3, dice, [True, t, t, t, t])
     def make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool]):
         if reroll_remaining == 3:
             data = {
