@@ -1,138 +1,101 @@
+import socket
+import threading
+import time
+import itertools
+import random
 import json
-import asyncio
-import base64
-
+from typing import List
 
 class Game:
-    def __init__(self, player_count):
-        self.player_count: int = player_count
-        self.curr_player: int = 0
-        self.scoreboard: list(int) = [[0]*12 for _ in range(player_count)]
-        self.turn = 1
+    def __init__(self, total_users: int):
+        self.total_users = total_users
+        self.uuid = 0
+        self.turns = itertools.cycle([i for i in range(1, total_users+1)])
+        self.turn = next(self.turns)
+        self.connections = {}
 
-async def turn(writer, reader, message):
-    print(message)
-    writer.write(message.encode())
-    await writer.drain()
-    print("SENT " + message)
+    def roll(self, dices: List[int], indices: List[int]):
+        for i in indices:
+            dices[i] = random.randint(1, 6)
+        return dices
     
-    data = await reader.read(100)
-    new_message = data.decode()
-    print("RECEIVED " + new_message)
-    
-    writer.close()
-    await writer.wait_closed()
-    
-    return new_message
-      
-async def handle_client(reader, writer, client_id):
-    info = {
-        "STATUS": "PREGAME",
-        "DATA":"", 
-        "MSG":"Waiting for other players"
-    }
-    
-    msg = await turn(reader, writer, json.dumps(info))
-    print("SENT PREGAME to " + str(client_id))
-    return msg
+    def end_turn(self):
+        self.turn = next(self.turns)
 
-# async def play_game():
+class ServerData:
+    def __init__(self, status: str, remaining_roll=None, dice=None):
+        self.status = status
+        self.data = {}
+        self.msg = None
+        match status:
+            case "PREGAME":
+                self.msg = "Waiting for other players..."
+            case "TURN":
+                self.data["remaining_roll"]=remaining_roll
+                self.data["dice"]=dice
+                self.msg = f"You have {remaining_roll} remaining"
+            case "WAIT":
+                self.remaining_roll = remaining_roll
+                self.dice = dice
+                self.msg = f"Currently other player's roll"
+            case "END":
+                self.msg = "You won!"
+    
+    def encode_server_data(self):
+        data = {"STATUS":self.status, "DATA":self.data, "MSG":self.msg}
+        json_data = json.dumps(data, indent = 4) 
+        return json_data.encode()
+
+def handle_client(client_socket, client_address, uuid):
     try:
         while True:
-            for i in range(1, game.player_count+1):
-                if i == game.turn:
-                    info = {
-                        "STATUS": "TURN",
-                        "DATA":{"remaining_roll":3, "dice":[1,2,3,4,5,5]}, 
-                        "MSG":"Your turn!"
-                    }
+            data = client_socket.recv(1024)
+            if not data:
+                break
+            print(data.decode())
+            if game.uuid < game.total_users:
+                data = ServerData("PREGAME")
+                client_socket.sendall(data.encode_server_data())
+            else:
+                if game.turn == uuid:
+                    data = ServerData("TURN", 3, [1,2,3,4,5])
+                    client_socket.sendall(data.encode_server_data())
                 else:
-                    info = {
-                        "STATUS": "WAIT",
-                        "DATA":"", 
-                        "MSG":"Currently player {}'s turn...".format(i)
-                    }
-                await send_message(writer, info)
-                print(f'message to player {i} sent')
-    except asyncio.CancelledError:
-        print("Cancelled event")
-    except Exception as e:
-        print(f"Error handling client: {e}")
+                    data = ServerData("WAIT", 3, [1,2,3,4,5])
+                    client_socket.sendall(data.encode_server_data())
+
+            time.sleep(1)
+
     finally:
-        writer.close()
-        await writer.wait_closed()
+        print(f"Closing connection with user{uuid} on {client_address}.")
+        client_socket.close()
 
-async def start_game_server(game):
-    host = '0.0.0.0'
-    port_base = 3000
-    client_id = 0
-
-    async def on_client_connected(reader, writer):
-        nonlocal client_id
-        client_id += 1
-        # print(client_id)
-        # msg = await handle_client(reader, writer, client_id)
-        # print("RECEIVED BACK : " + msg)
-        
-        data = await reader.read(100)
-        message = data.decode()
-        print(f"Accepted connection from {writer.get_extra_info('peername')}")
-
-        info = {
-            "STATUS": "PREGAME",
-            "DATA":"", 
-            "MSG":"Waiting for other players"
-        }
-
-        msg = json.dumps(info)
-
-        writer.write(msg.encode())
-        await writer.drain()
-
-        print("SENT " + msg)
-        
-        writer.close()
-        await writer.wait_closed()
-        
-        # if client_id == game.player_count:
-        #     async with game_started_condition:
-        #         game_started_condition.notify_all()
-        #         for writer in writers:
-        #             info = {
-        #                 "STATUS": "TURN",
-        #                 "DATA":"", 
-        #                 "MSG":"Waiting for other players"
-        #             }
-        #             await send_message(writer, info)
-        #             print('sent message ' + str(info))
-        #     await play_game()
-            
-        #     print("passed")
-        #     for i in range(1, game.player_count+1):
-        #         if i == game.turn:
-        #             info = {
-        #                 "STATUS": "TURN",
-        #                 "DATA":{"remaining_roll":3, "dice":[1,2,3,4,5,5]}, 
-        #                 "MSG":"Your turn!"
-        #             }
-        #         else:
-        #             info = {
-        #                 "STATUS": "WAIT",
-        #                 "DATA":"", 
-        #                 "MSG":"Currently player {}'s turn...".format(i)
-        #             }
-        #         await send_message(writer, info)
-        #         print(f'message to player {i} sent')
-        
-    server = await asyncio.start_server(on_client_connected, host, port_base)
-
-    async with server:
-        # Wait until the required number of clients have connected
-        # async with game_started_condition:
-        #     await game_started_condition.wait()
-        # print("Game started!")
-        await server.serve_forever()
+def run_server():
+    IP, PORT = '127.0.0.1', 3000
     
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((IP, PORT))
+    server_socket.listen(5)
+
+    print("Server Initialized on 3000")
+
+    try:
+        while game.uuid < game.total_users:
+            client_socket, client_address = server_socket.accept()
+            print(f"Accepted connection from {client_address}")
+
+            game.uuid += 1
+
+            client_handler = threading.Thread(target=handle_client, args=(client_socket, client_address, game.uuid))
+            client_handler.start()
+
+    except KeyboardInterrupt:
+        print("Server shutting down.")
+    finally:
+        # Close the server socket
+        server_socket.close()
+
 if __name__ == '__main__':
+    global game
     game = Game(2)
-    asyncio.run(start_game_server(game))    
+    run_server()
