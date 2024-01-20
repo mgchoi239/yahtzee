@@ -1,7 +1,7 @@
 import socket
 import json
 from collections import Counter
-
+import utils
 
 class Player:
     def __init__(self, server):
@@ -30,15 +30,8 @@ class Player:
     Otherwise, We can assume player want to reroll at least some of dice."""
     def make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool]):
         if reroll_remaining == 3:
-            data = {
-                "STATUS": "ROLL",
-                "DATA": {
-                    "dice": [0,0,0,0,0],
-                    "index": [True, True, True, True, True],
-                },
-                "MSG": "",
-            }
-        
+            self.server.sendall(utils.encode_client_data("ROLL", [0,0,0,0,0], [True, True, True, True, True]))
+
         elif end_my_turn or not reroll_remaining:
             # have to make player choose score from possible_scores
             possible_scores = self.select_score(dice)
@@ -55,28 +48,12 @@ class Player:
                 print("Possible Index are:", [i for [i,k] in possible_out]) 
                 selected_score_index = input("Select different Index: ")
                 selected_score = possible_scores[selected_score_index]
-            data = {
-                "STATUS": "END TURN",
-                "DATA": {
-                    "index": selected_score_index,
-                    "score": selected_score,
-                },
-                "MSG": "",
-            }
+            
+            self.server.sendall(utils.encode_client_data("END_TURN", score=selected_score, score_index=selected_score_index))
             
         else:
             # make user to chose which index they want to reroll
-            data = {
-                "STATUS": "ROLL",
-                "DATA": {
-                    "dice": dice,
-                    "index": reroll_dice,
-                },
-                "MSG": "",
-            }
-        json_data = json.dumps(data, indent = 4)
-        self.server.sendall(json_data.encode())
-        return None
+            self.server.sendall(utils.encode_client_data("ROLL", dice=dice, index=index))
 
     
     """ TODO: Player will be shown the possible score board to choose from.
@@ -89,29 +66,29 @@ class Player:
             # selected score can not be chosen again.
             if i in self.used_board_index:
                 yacht_scoreboard[i] = -1
-            else:
-                if i == 0:
+            match i:
+                case 0:
                     yacht_scoreboard[i] = sum([1 for die in dice if die == 1])
-                elif i == 1:
+                case 1:
                     yacht_scoreboard[i] = sum([2 for die in dice if die == 2])
-                elif i == 2:
+                case 2:
                     yacht_scoreboard[i] = sum([3 for die in dice if die == 3])
-                elif i == 3:
+                case 3:
                     yacht_scoreboard[i] = sum([4 for die in dice if die == 4])
-                elif i == 4:
+                case 4:
                     yacht_scoreboard[i] = sum([5 for die in dice if die == 5])
-                elif i == 5:
+                case 5:
                     yacht_scoreboard[i] = sum([6 for die in dice if die == 6])
                 # full-house
-                elif i == 6:
+                case 6:
                     full_house = True if len(Counter(dice)) == 2 else False
                     yacht_scoreboard[i] = sum(dice) if full_house else 0
                 # Four-of-a-Kind
-                elif i == 7:
+                case 7:
                     result = [num for num, count in Counter(dice).items() if count == 4]
                     yacht_scoreboard[i] = result[0] * 4 if len(result) == 1 else 0
                 # Little Straight
-                elif i == 8:
+                case 8:
                     dice.sort()
                     found_litte_straight = True
                     for j in range(len(dice)):
@@ -120,7 +97,7 @@ class Player:
                             break
                     yacht_scoreboard[i] = 30 if found_litte_straight else 0
                 # Big Straight
-                elif i == 9:
+                case 9:
                     dice.sort()
                     found_big_straight = True
                     for j in range(len(dice)):
@@ -130,10 +107,10 @@ class Player:
                     yacht_scoreboard[i] = 30 if found_big_straight else 0
 
                 #Choice: Sum of all dice
-                elif i == 10:
+                case 10:
                     yacht_scoreboard[i] = sum(dice)
                 #Yacht: all five dice showing the same face
-                else:
+                case 11:
                     yacht_scoreboard[i] = 50 if len(Counter(dice)) == 1 else 0
 
         return yacht_scoreboard

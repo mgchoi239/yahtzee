@@ -5,14 +5,18 @@ import itertools
 import random
 import json
 from typing import List
+from typing import Optional
+import utils
 
 class Game:
     def __init__(self, total_users: int):
         self.total_users = total_users
+        self.curr_users = 0
         self.uuid = 0
         self.turns = itertools.cycle([i for i in range(1, total_users+1)])
         self.turn = next(self.turns)
         self.connections = {}
+        self.scoreboard = [[0]*12 for _ in range(total_users)]
 
     def roll(self, dices: List[int], indices: List[int]):
         for i in indices:
@@ -21,50 +25,32 @@ class Game:
     
     def end_turn(self):
         self.turn = next(self.turns)
-
-class ServerData:
-    def __init__(self, status: str, remaining_roll=None, dice=None):
-        self.status = status
-        self.data = {}
-        self.msg = None
-        match status:
-            case "PREGAME":
-                self.msg = "Waiting for other players..."
-            case "TURN":
-                self.data["remaining_roll"]=remaining_roll
-                self.data["dice"]=dice
-                self.msg = f"You have {remaining_roll} remaining"
-            case "WAIT":
-                self.remaining_roll = remaining_roll
-                self.dice = dice
-                self.msg = f"Currently other player's roll"
-            case "END":
-                self.msg = "You won!"
     
-    def encode_server_data(self):
-        data = {"STATUS":self.status, "DATA":self.data, "MSG":self.msg}
-        json_data = json.dumps(data, indent = 4) 
-        return json_data.encode()
-
 def handle_client(client_socket, client_address, uuid):
     try:
+        recv_data = client_socket.recv(1024)
+        print(recv_data.decode())
         while True:
-            data = client_socket.recv(1024)
-            if not data:
-                break
-            print(data.decode())
-            if game.uuid < game.total_users:
-                data = ServerData("PREGAME")
-                client_socket.sendall(data.encode_server_data())
+            if game.curr_users < game.total_users:
+                client_socket.sendall(utils.encode_server_data("PREGAME"))
             else:
                 if game.turn == uuid:
-                    data = ServerData("TURN", 3, [1,2,3,4,5])
-                    client_socket.sendall(data.encode_server_data())
+                    client_socket.sendall(utils.encode_server_data("TURN", 3, [1,2,3,4,5]))
                 else:
-                    data = ServerData("WAIT", 3, [1,2,3,4,5])
-                    client_socket.sendall(data.encode_server_data())
-
+                    client_socket.sendall(utils.encode_server_data("WAIT", 3, [1,2,3,4,5]))
+                
+                data = client_socket.recv(1024)
+                recv_data = utils.decode_client_data(data)
+                
+                match recv_data["status"]:
+                    case "ROLL":
+                        dices = game.roll(recv_data['data']['dice'], recv_data['data']['index'])
+                        client_socket.sendall(utils.encode_server_data("TURN", 2, dices))
+                    case "END_TURN":
+                        game.scoreboard[recv_data['data']['index']] = recv_data['data']['score']
+                        game.end_turn()
             time.sleep(1)
+            
 
     finally:
         print(f"Closing connection with user{uuid} on {client_address}.")
@@ -77,7 +63,7 @@ def run_server():
     server_socket.bind((IP, PORT))
     server_socket.listen(5)
 
-    print("Server Initialized on 3000")
+    print(f"Server Initialized on {PORT}")
 
     try:
         while game.uuid < game.total_users:
@@ -85,6 +71,7 @@ def run_server():
             print(f"Accepted connection from {client_address}")
 
             game.uuid += 1
+            game.curr_users += 1
 
             client_handler = threading.Thread(target=handle_client, args=(client_socket, client_address, game.uuid))
             client_handler.start()
