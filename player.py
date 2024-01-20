@@ -2,6 +2,7 @@ import socket
 import json
 from collections import Counter
 import utils
+import art
 
 class Player:
     def __init__(self, server):
@@ -16,11 +17,11 @@ class Player:
                                 2: "2. Threes:",
                                 3: "3. Fours:",
                                 4: "4. Fives:",
-                                5: "5. Sixs:",
+                                5: "5. Sixes:",
                                 6: "6. Full House:",
                                 7: "7. Four-Of-A-Kind:",
                                 8: "8. Little Straight:",
-                                9: "9. Big Straigt:", 
+                                9: "9. Big Straight:", 
                                 10: "10. Choice:",
                                 11: "11. Yacht:"}
         
@@ -38,10 +39,14 @@ class Player:
             print(possible_scores)
             index = [i for i in range(12)]
             possible_out = []
+            possible_out_str = ""
             for i, score in zip(index, possible_scores):
                 if score != -1:
-                    possible_out.append([self.dict_scoreboard[i], score])
-            print(possible_out)
+                    possible_out.append(score)
+                    possible_out_str += self.dict_scoreboard[i] + " " + str(score) + '\n'
+                else:
+                    possible_out.append(-1)
+            print(art.TABLE.format(*possible_out))
             selected_score_index = int(input("Select Index: "))
             selected_score = possible_scores[selected_score_index]
             while selected_score_index < 0 or selected_score_index > 11 or selected_score_index in self.used_board_index:

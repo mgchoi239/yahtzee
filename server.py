@@ -57,7 +57,7 @@ def handle_client(client_socket, client_address, uuid):
         client_socket.close()
 
 def run_server():
-    IP, PORT = '127.0.0.1', 3000
+    IP, PORT = '127.0.0.1', 3001
     
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((IP, PORT))

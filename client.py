@@ -3,11 +3,12 @@ import json
 from player import Player
 from collections import Counter
 import utils
+import art
 
 if __name__ == '__main__':
     # Player setup
     SERVER_IP = "127.0.0.1"
-    PORT = 3000
+    PORT = 3001
 
     # test = player("server")
     # print(test.make_move(False, 1, [1,1,2,3,6], [False,False,False,False,False]))
@@ -33,6 +34,8 @@ if __name__ == '__main__':
         ip = socket.gethostbyname(socket.gethostname())
         server.sendall(f"Connected ACK from {ip}".encode())
         
+        print(art.LOGO)
+        
         while True:
             try:
                 data = server.recv(4096).decode()
@@ -51,7 +54,7 @@ if __name__ == '__main__':
                             remain = dict_data["data"]["remaining_roll"]
 
                             if remain == 3:
-                                move = input("ENTER YOUR MOVE: (0: ROLL): ")
+                                move = input("ENTER YOUR MOVE:\n(0: ROLL):\n")
                                 p.make_move(False, 3, dice, [True for i in range(5)])
 
                             elif remain == 1 or remain == 2:
