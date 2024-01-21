@@ -5,7 +5,7 @@ from collections import Counter
 import utils
 import art
 import os
-
+import dice as diceroll
 
 def valid_input(msg, valid_set):
     ipt = input(msg)
@@ -52,16 +52,18 @@ if __name__ == '__main__':
                 recv_data = utils.decode_client_data(data)
                 prev_data = None  
                 if prev_data != recv_data:
+                    print(recv_data)
                     print(recv_data["msg"])
                     match recv_data["status"]:
                         case "PREGAME":
-                            print(recv_data)
+                            print('n')
                         case "TURN":
                             p.turn = True
-                            print(recv_data)
                             # make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool])
                             dice = recv_data["data"]["dice"]
                             remain = recv_data["data"]["remaining_roll"]
+
+                            diceroll.show_dice(dice)
 
                             if remain == 3:
                                 move = valid_input("ENTER YOUR MOVE:\n(0: ROLL):\n",{'0', 'roll'})

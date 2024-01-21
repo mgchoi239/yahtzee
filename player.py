@@ -33,7 +33,8 @@ class Player:
     def make_move(self, end_my_turn: bool, roll_remaining: int, dice: list[int], reroll_dice: list[bool]):
         if roll_remaining == 3:
             self.server.sendall(utils.encode_client_data("ROLL", [0,0,0,0,0], [True, True, True, True, True]))
-            # diceroll.roll_dice([0,0,0,0,0])
+            diceroll.roll_dice(dice)
+            
         elif end_my_turn or not roll_remaining:
             # have to make player choose score from possible_scores
             possible_scores = self.select_score(dice)

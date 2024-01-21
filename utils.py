@@ -47,8 +47,6 @@ def decode_server_data(byte_data):
     return json.loads(str_data)
 
 def decode_client_data(byte_data):
-    print(byte_data)
     str_data = byte_data.decode()
     res = json.loads(str_data)
-    print(res)
     return res

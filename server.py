@@ -21,9 +21,10 @@ class Game:
         self.status = None
         self.curr_data = None
 
-    def roll(self, dices: List[int], indices: List[int]):
-        for i in indices:
-            dices[i] = random.randint(1, 6)
+    def roll(self, dices: list[int], indices: list[int]):
+        for i in range(len(indices)):
+            if indices[i]:
+                dices[i] = random.randint(1, 6)
         return dices
     
     def end_turn(self):
@@ -32,17 +33,17 @@ class Game:
 def handle_client(client_socket, client_address, uuid):
     try:
         recv_data = client_socket.recv(1024)
-        game.connections.add((uuid, client_socket, client_address))
-        print(uuid, client_socket, client_address)
-        print(recv_data.decode())
+        # game.connections.add((uuid, client_socket, client_address))
+        # print(uuid, client_socket, client_address)
+        # print(recv_data.decode())
         while True:
             if game.curr_users < game.total_users:
                 client_socket.sendall(utils.encode_server_data("PREGAME"))
             else:
                 if game.turn == uuid:
-                    client_socket.sendall(utils.encode_server_data("TURN", 3, [1,2,3,4,5]))
+                    client_socket.sendall(utils.encode_server_data("TURN", 3, [0,0,0,0,0]))
                 else:
-                    client_socket.sendall(utils.encode_server_data("WAIT", 3, [1,2,3,4,5]))
+                    client_socket.sendall(utils.encode_server_data("WAIT", 3, [0,0,0,0,0]))
                     game.status = 'WAIT'
                 is_turn = True
                 while is_turn:
@@ -52,6 +53,7 @@ def handle_client(client_socket, client_address, uuid):
                         game.curr_data = recv_data
                         match recv_data["status"]:
                             case "ROLL":
+                                print(recv_data)
                                 dices = game.roll(recv_data['data']['dice'], recv_data['data']['index'])
                                 client_socket.sendall(utils.encode_server_data("TURN", 2, dices))
                                 
