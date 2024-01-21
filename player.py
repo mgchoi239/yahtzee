@@ -30,10 +30,11 @@ class Player:
     """ TODO: player will make a move. First decide wheather to end_my_turn/
     if no reroll_remaining, end_my_turn and send score to the server.
     Otherwise, We can assume player want to reroll at least some of dice."""
-    def make_move(self, end_my_turn: bool, roll_remaining: int, dice: list[int], reroll_dice: list[bool]):
+    def make_move(self, end_my_turn: bool, roll_remaining: int, dice: list[int], fixed_index: list[bool]):
+        print(end_my_turn, roll_remaining, dice, fixed_index)
         if roll_remaining == 3:
-            self.server.sendall(utils.encode_client_data("ROLL", [0,0,0,0,0], [True, True, True, True, True]))
-            diceroll.roll_dice(dice)
+            self.server.sendall(utils.encode_client_data("ROLL", [0]*5, [False]*5, 2))
+            diceroll.roll_dice(dice, fixed_index)
             
         elif end_my_turn or not roll_remaining:
             # have to make player choose score from possible_scores
@@ -56,11 +57,14 @@ class Player:
                 selected_score_index = input("Select different Index: ")
                 selected_score = possible_scores[selected_score_index]
             
-            self.server.sendall(utils.encode_client_data("END_TURN", score=selected_score, score_index=selected_score_index))
+            self.server.sendall(utils.encode_client_data("END_TURN", score=selected_score, score_index=selected_score_index, fixed_index=fixed_index))
             
         else:
             # make user to chose which index they want to reroll
-            self.server.sendall(utils.encode_client_data("ROLL", dice=dice, index=index))
+            print("loading reroll")
+            print()
+            self.server.sendall(utils.encode_client_data("ROLL", dice=dice, fixed_index=fixed_index))
+            diceroll.roll_dice(dice, fixed_index)
 
     
     """ TODO: Player will be shown the possible score board to choose from.

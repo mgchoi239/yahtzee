@@ -21,9 +21,9 @@ class Game:
         self.status = None
         self.curr_data = None
 
-    def roll(self, dices: list[int], indices: list[int]):
-        for i in range(len(indices)):
-            if indices[i]:
+    def roll(self, dices: list[int], fixed_index=list[bool]):
+        for i in range(len(fixed_index)):
+            if not fixed_index[i]:
                 dices[i] = random.randint(1, 6)
         return dices
     
@@ -41,9 +41,9 @@ def handle_client(client_socket, client_address, uuid):
                 client_socket.sendall(utils.encode_server_data("PREGAME"))
             else:
                 if game.turn == uuid:
-                    client_socket.sendall(utils.encode_server_data("TURN", 3, [0,0,0,0,0]))
+                    client_socket.sendall(utils.encode_server_data("TURN", 3, [0]*5, [False]*5))
                 else:
-                    client_socket.sendall(utils.encode_server_data("WAIT", 3, [0,0,0,0,0]))
+                    client_socket.sendall(utils.encode_server_data("WAIT", 3, [0]*5, [False]*5))
                     game.status = 'WAIT'
                 is_turn = True
                 while is_turn:
@@ -54,8 +54,8 @@ def handle_client(client_socket, client_address, uuid):
                         match recv_data["status"]:
                             case "ROLL":
                                 print(recv_data)
-                                dices = game.roll(recv_data['data']['dice'], recv_data['data']['index'])
-                                client_socket.sendall(utils.encode_server_data("TURN", 2, dices))
+                                dices = game.roll(recv_data['data']['dice'], recv_data['data']['fixed_index'])
+                                client_socket.sendall(utils.encode_server_data("TURN", 2, dices, recv_data['data']['fixed_index']))
                                 
                             case "END_TURN":
                                 game.scoreboard[recv_data['data']['score_index']] = recv_data['data']['score']
@@ -66,7 +66,7 @@ def handle_client(client_socket, client_address, uuid):
                         if curr_player_data:
                             match recv_data["status"]:
                                 case "ROLL":
-                                    client_socket.sendall(utils.encode_server_data("WAIT", 2, curr_player_data['data']['dice']))
+                                    client_socket.sendall(utils.encode_server_data("WAIT", recv_data['data']['remaining_roll']-1, curr_player_data['data']['dice']))
                                     
                                 case "END_TURN":
                                     client_socket.sendall(utils.encode_server_data("WAIT", 0, curr_player_data['data']['dice']))

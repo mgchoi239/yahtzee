@@ -52,13 +52,12 @@ die_art = {
 def show_dice(dices):
     for i in range(5):
         print(' '.join(die_art[n][i] for n in dices))
-        
 
-def roll_dice(dices):
+def roll_dice(dice, fixed_index):
     timeout = time.time() + 2   # 7 seconds
     
     while time.time() < timeout:
-        dtp = [random.randint(1, 6) if dices[i] == 0 else dices[i] for i in range(5)]
+        dtp = [random.randint(1, 6) if not fixed_index[i] else dice[i] for i in range(5)]
         show_dice(dtp)
         
         os.system('clear')

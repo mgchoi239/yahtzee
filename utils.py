@@ -2,13 +2,14 @@ import json
 from typing import List
 from typing import Optional
 
-def encode_client_data(status: str, dice:Optional[List[int]]=None, index:Optional[List[int]]=None, score:Optional[int]=None,  score_index:Optional[int]=None):
+def encode_client_data(status: str, dice:Optional[List[int]]=None, fixed_index:Optional[List[int]]=None, score:Optional[int]=None,  score_index:Optional[int]=None, remaining_roll:Optional[int]=None):
     data = {}
     
     match status:
         case "ROLL":
             data['dice'] = dice
-            data['index'] = index
+            data['fixed_index'] = fixed_index
+            data['remaining_roll'] = remaining_roll
         case "END_TURN":
             data["score"]=score
             data["score_index"]=score_index
@@ -18,7 +19,7 @@ def encode_client_data(status: str, dice:Optional[List[int]]=None, index:Optiona
     
     return json_data.encode()
 
-def encode_server_data(status: str, remaining_roll:Optional[int]=None, dice:Optional[List[int]]=None):
+def encode_server_data(status: str, remaining_roll:Optional[int]=None, dice:Optional[list[int]]=None, fixed_index:Optional[list[bool]]=None):
     data = {}
     msg = None
     
@@ -29,6 +30,7 @@ def encode_server_data(status: str, remaining_roll:Optional[int]=None, dice:Opti
         case "TURN":
             data["remaining_roll"]=remaining_roll
             data["dice"]=dice
+            data['fixed_index']=fixed_index
             msg = f"You have {remaining_roll} remaining"
         case "WAIT":
             data["remaining_roll"]=remaining_roll

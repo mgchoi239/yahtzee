@@ -8,11 +8,11 @@ import os
 import dice as diceroll
 
 def valid_input(msg, valid_set):
-    ipt = input(msg)
+    ipt = input(msg).lower()
     while ipt.lower() not in valid_set:
         print(f"\n>> NOT A VALID INPUT << ({valid_set})")
         ipt = input(msg)
-    return ipt
+    return ipt.lower()
 
 if __name__ == '__main__':
     # Player setup
@@ -56,45 +56,48 @@ if __name__ == '__main__':
                     print(recv_data["msg"])
                     match recv_data["status"]:
                         case "PREGAME":
-                            print('n')
+                            print("woah")
                         case "TURN":
                             p.turn = True
                             # make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool])
                             dice = recv_data["data"]["dice"]
                             remain = recv_data["data"]["remaining_roll"]
+                            fixed_index = recv_data["data"]["fixed_index"]
 
                             diceroll.show_dice(dice)
 
-                            if remain == 3:
-                                move = valid_input("ENTER YOUR MOVE:\n(0: ROLL):\n",{'0', 'roll'})
-                                # move = input("ENTER YOUR MOVE:\n(0: ROLL):\n")
-                                p.make_move(False, 3, dice, [True for i in range(5)])
+                            match remain:
+                                case 3:
+                                    move = valid_input("ENTER YOUR MOVE:\n(0: ROLL):\n",{'0', 'roll'})
+                                    # move = input("ENTER YOUR MOVE:\n(0: ROLL):\n")
+                                    p.make_move(False, 3, dice, fixed_index)
+                                case 2 | 1:
+                                    print("CHOOSE YOUR MOVE:\n")
+                                    move = valid_input("POSSIBLE MOVES: \n(0: REROLL) \n(1: STOP & SELECT SCORE)\n", {'0','1'})
+                                
+                                    # move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
+                                    if move == '0':
+                                        print("Current Dice: ", dice)
+                                        print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
+                                        move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
+                                        confirm = valid_input("IS {} CORRECT:\n".format(move), {'y', 'n'})
 
-                            elif remain == 1 or remain == 2:
-                                print("CHOOSE YOUR MOVE:\n")
-                                move = valid_input("POSSIBLE MOVES: \n(0: REROLL) \n(1: STOP & SELECT SCORE)\n", {'0','1'})
-                            
-                                # move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
-                                if move == '0':
-                                    print("Current Dice: ", dice)
-                                    print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
-                                    move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
-                                    confirm = valid_input("IS {} CORRECT:\n".format(move), {'y', 'n'})
-
-                                    
-                                    # chosen_index = [int(i) for i in move.split(" ")]
-                                    # p.make_move(False, remain, dice, [True for i in range(5) if i in chosen_index])
-                                else:
-                                    p.make_move(True, remain, dice, [False, False, False, False, False])
-                            else:
-                                """
-                                TODO:
-                                remain == 1 will be the last time the user will be able to make any moves.
-                                remain == 0 is an announcement by the server; no user action required besides printing information
-                                """
-                                print("Move finished. Current Scores are: ")
-                                # p.make_move(False, remain, dice, [False, False, False, False, False])
-                                # p.make_move()
+                                        if confirm == 'y':
+                                            for str_i in move.split(" "):
+                                                fixed_index[int(str_i)] = True
+                                            print(fixed_index)
+                                            p.make_move(False, remain, dice, fixed_index)
+                                    else:
+                                        p.make_move(True, remain, dice, [False]*5)
+                                case 0:
+                                    """
+                                    TODO:
+                                    remain == 1 will be the last time the user will be able to make any moves.
+                                    remain == 0 is an announcement by the server; no user action required besides printing information
+                                    """
+                                    print("Move finished. Current Scores are: ")
+                                    # p.make_move(False, remain, dice, [False, False, False, False, False])
+                                    # p.make_move()
                         case "WAIT":
                             """
                             TODO: Need to work on updating and displaying Opponents' progress
