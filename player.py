@@ -3,6 +3,7 @@ import json
 from collections import Counter
 import utils
 import art
+import dice as diceroll
 
 class Player:
     def __init__(self, server):
@@ -12,28 +13,28 @@ class Player:
         self.scoreboard: list[int] = []
         self.server = server
         self.turn = False
-        self.dict_scoreboard = {0: "0. Ones:",
-                                1: "1. Twos:",
-                                2: "2. Threes:",
-                                3: "3. Fours:",
-                                4: "4. Fives:",
-                                5: "5. Sixes:",
-                                6: "6. Full House:",
-                                7: "7. Four-Of-A-Kind:",
-                                8: "8. Little Straight:",
-                                9: "9. Big Straight:", 
-                                10: "10. Choice:",
-                                11: "11. Yacht:"}
+        self.dict_scoreboard = {0: "(0) Ones:",
+                                1: "(1) Twos:",
+                                2: "(2) Threes:",
+                                3: "(3) Fours:",
+                                4: "(4) Fives:",
+                                5: "(5) Sixes:",
+                                6: "(6) Full House:",
+                                7: "(7) Four-Of-A-Kind:",
+                                8: "(8) Little Straight:",
+                                9: "(9) Big Straight:", 
+                                10: "(10) Choice:",
+                                11: "(11) Yacht:"}
         
 
     """ TODO: player will make a move. First decide wheather to end_my_turn/
     if no reroll_remaining, end_my_turn and send score to the server.
     Otherwise, We can assume player want to reroll at least some of dice."""
-    def make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool]):
-        if reroll_remaining == 3:
+    def make_move(self, end_my_turn: bool, roll_remaining: int, dice: list[int], reroll_dice: list[bool]):
+        if roll_remaining == 3:
             self.server.sendall(utils.encode_client_data("ROLL", [0,0,0,0,0], [True, True, True, True, True]))
-
-        elif end_my_turn or not reroll_remaining:
+            # diceroll.roll_dice([0,0,0,0,0])
+        elif end_my_turn or not roll_remaining:
             # have to make player choose score from possible_scores
             possible_scores = self.select_score(dice)
             print(possible_scores)
@@ -86,7 +87,7 @@ class Player:
                     yacht_scoreboard[i] = sum([6 for die in dice if die == 6])
                 # full-house
                 case 6:
-                    full_house = True if len(Counter(dice)) == 2 else False
+                    full_house = True if len(Counter(dice)) == 2 and 0 not in dice else False
                     yacht_scoreboard[i] = sum(dice) if full_house else 0
                 # Four-of-a-Kind
                 case 7:
