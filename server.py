@@ -8,6 +8,7 @@ from typing import List
 from typing import Optional
 import utils
 import os
+import const as CONST
 
 class Game:
     def __init__(self, total_users: int):
@@ -17,7 +18,7 @@ class Game:
         self.turns = itertools.cycle([i for i in range(1, total_users+1)])
         self.turn = next(self.turns)
         self.connections = set()
-        self.scoreboard = [[0]*12 for _ in range(total_users)]
+        self.scoreboard = [[0]*12 for _ in range(total_users+1)]
         self.status = None
         self.curr_data = None
 
@@ -58,7 +59,9 @@ def handle_client(client_socket, client_address, uuid):
                                 client_socket.sendall(utils.encode_server_data("TURN", 2, dices, recv_data['data']['fixed_index']))
                                 
                             case "END_TURN":
-                                game.scoreboard[recv_data['data']['score_index']] = recv_data['data']['score']
+                                print(f'{uuid}\n{recv_data}\n{game.scoreboard}')
+                                game.scoreboard[uuid][recv_data['data']['score_index']] = recv_data['data']['score']
+                                print(game.scoreboard)
                                 game.end_turn()
                                 is_turn = False
                     else:
@@ -82,8 +85,8 @@ def handle_client(client_socket, client_address, uuid):
         client_socket.close()
 
 def run_server():
-    IP, PORT = '127.0.0.1', 3004
-    
+    IP, PORT = '127.0.0.1', CONST.PORT
+
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((IP, PORT))
     server_socket.listen(5)

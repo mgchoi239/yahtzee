@@ -4,13 +4,25 @@ from collections import Counter
 import utils
 import art
 import dice as diceroll
+# import client as client
+
+def valid_input(msg, valid_set, ipt_type):
+    print(valid_set)
+    print(ipt_type)
+    print(msg)
+    ipt = ipt_type(input(msg).lower())
+    print(ipt)
+    while ipt not in valid_set:
+        print(f"\n>> NOT A VALID INPUT << ({valid_set})")
+        ipt = input(msg)
+    return ipt
 
 class Player:
     def __init__(self, server):
         self.score: int = 0
         self.opponent_score: int = 0
-        self.used_board_index = set()
-        self.scoreboard: list[int] = []
+        self.unused_board_index = set([i for i in range(12)])
+        self.scoreboard: list[int] = [0]*12
         self.server = server
         self.turn = False
         self.dict_scoreboard = {0: "(0) Ones:",
@@ -31,6 +43,7 @@ class Player:
     if no reroll_remaining, end_my_turn and send score to the server.
     Otherwise, We can assume player want to reroll at least some of dice."""
     def make_move(self, end_my_turn: bool, roll_remaining: int, dice: list[int], fixed_index: list[bool]):
+        
         print(end_my_turn, roll_remaining, dice, fixed_index)
         if roll_remaining == 3:
             self.server.sendall(utils.encode_client_data("ROLL", [0]*5, [False]*5, 2))
@@ -40,23 +53,15 @@ class Player:
             # have to make player choose score from possible_scores
             possible_scores = self.select_score(dice)
             print(possible_scores)
-            index = [i for i in range(12)]
-            possible_out = []
-            possible_out_str = ""
-            for i, score in zip(index, possible_scores):
-                if score != -1:
-                    possible_out.append(score)
-                    possible_out_str += self.dict_scoreboard[i] + " " + str(score) + '\n'
-                else:
-                    possible_out.append(-1)
-            print(art.TABLE.format(*possible_out))
-            selected_score_index = int(input("Select Index: "))
-            selected_score = possible_scores[selected_score_index]
-            while selected_score_index < 0 or selected_score_index > 11 or selected_score_index in self.used_board_index:
-                print("Possible Index are:", [i for [i,k] in possible_out]) 
-                selected_score_index = input("Select different Index: ")
-                selected_score = possible_scores[selected_score_index]
             
+            possible_out = [score if score != -1 else -1 for score in possible_scores]
+            print(art.TABLE.format(*possible_out))
+            
+            selected_score_index = valid_input("Select Index:\n", self.unused_board_index, int) 
+            selected_score = possible_scores[selected_score_index]
+            self.unused_board_index.remove(selected_score_index)
+            
+            print(f'{selected_score}\n{selected_score_index}\n{fixed_index}')
             self.server.sendall(utils.encode_client_data("END_TURN", score=selected_score, score_index=selected_score_index, fixed_index=fixed_index))
             
         else:
@@ -75,7 +80,7 @@ class Player:
         print(dice)
         for i in range(12):
             # selected score can not be chosen again.
-            if i in self.used_board_index:
+            if i not in self.unused_board_index:
                 yacht_scoreboard[i] = -1
             match i:
                 case 0:

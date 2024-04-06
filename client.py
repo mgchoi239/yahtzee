@@ -6,18 +6,19 @@ import utils
 import art
 import os
 import dice as diceroll
+import const as CONST
 
-def valid_input(msg, valid_set):
-    ipt = input(msg).lower()
-    while ipt.lower() not in valid_set:
+def valid_input(msg, valid_set, ipt_type):
+    ipt = ipt_type(input(msg).lower())
+    while ipt not in valid_set:
         print(f"\n>> NOT A VALID INPUT << ({valid_set})")
         ipt = input(msg)
-    return ipt.lower()
+    return ipt
 
 if __name__ == '__main__':
     # Player setup
     SERVER_IP = "127.0.0.1"
-    PORT = 3004
+    PORT = CONST.PORT
 
 
     # test = player("server")
@@ -43,7 +44,7 @@ if __name__ == '__main__':
 
         ip = socket.gethostbyname(socket.gethostname())
         server.sendall(f"Connected ACK from {ip}".encode())
-        
+        os.system('clear')
         print(art.LOGO)
         
         while True:
@@ -52,11 +53,12 @@ if __name__ == '__main__':
                 recv_data = utils.decode_client_data(data)
                 prev_data = None  
                 if prev_data != recv_data:
-                    print(recv_data)
-                    print(recv_data["msg"])
+                    # print(recv_data)
+                    # print(recv_data["msg"])
                     match recv_data["status"]:
                         case "PREGAME":
-                            print("woah")
+                            a = 1
+                            # print("woah")
                         case "TURN":
                             p.turn = True
                             # make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool])
@@ -68,19 +70,19 @@ if __name__ == '__main__':
 
                             match remain:
                                 case 3:
-                                    move = valid_input("ENTER YOUR MOVE:\n(0: ROLL):\n",{'0', 'roll'})
+                                    move = valid_input("ENTER YOUR MOVE:\n(0: ROLL):\n",{'0', 'roll'},str)
                                     # move = input("ENTER YOUR MOVE:\n(0: ROLL):\n")
                                     p.make_move(False, 3, dice, fixed_index)
                                 case 2 | 1:
                                     print("CHOOSE YOUR MOVE:\n")
-                                    move = valid_input("POSSIBLE MOVES: \n(0: REROLL) \n(1: STOP & SELECT SCORE)\n", {'0','1'})
+                                    move = valid_input("POSSIBLE MOVES: \n(0: REROLL) \n(1: STOP & SELECT SCORE)\n", {'0','1'}, str)
                                 
                                     # move = 0 if move == 0 or move == "REROLL" or move == "Reroll" or move == "reroll" else 1
                                     if move == '0':
                                         print("Current Dice: ", dice)
-                                        print("WHICH INDEX WOULD YOU LIKE TO REROLL:\n")
+                                        print("WHICH INDEX WOULD YOU LIKE TO FIX:\n")
                                         move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
-                                        confirm = valid_input("IS {} CORRECT:\n".format(move), {'y', 'n'})
+                                        confirm = valid_input("IS {} CORRECT:\n".format(move), {'y', 'n'}, int)
 
                                         if confirm == 'y':
                                             for str_i in move.split(" "):
@@ -88,7 +90,7 @@ if __name__ == '__main__':
                                             print(fixed_index)
                                             p.make_move(False, remain, dice, fixed_index)
                                     else:
-                                        p.make_move(True, remain, dice, [False]*5)
+                                        p.make_move(True, remain, dice, [True]*5)
                                 case 0:
                                     """
                                     TODO:

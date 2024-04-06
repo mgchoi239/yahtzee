@@ -14,17 +14,24 @@ LOGO = """
 
 TABLE = '''
     + ------------------------- +
-    | (0) Ones: {}               |     
-    | (1) Twos: {}               |
-    | (2) Threes: {}             |
-    | (3) Fours: {}              |
-    | (4) Fives: {}              |
-    | (5) Sixes: {}              |
-    | (6) Full House: {}         |
-    | (7) Four-Of-A-Kind: {}     |
-    | (8) Little Straight: {}    |
-    | (9) Big Straight: {}       |
-    | (10) Choice: {}            |
-    | (11) Yacht: {}             |
+       (0) Ones: {}                    
+       (1) Twos: {}               
+       (2) Threes: {}             
+       (3) Fours: {}              
+       (4) Fives: {}              
+       (5) Sixes: {}              
+       (6) Full House: {}         
+       (7) Four-Of-A-Kind: {}     
+       (8) Little Straight: {}    
+       (9) Big Straight: {}       
+       (10) Choice: {}            
+       (11) Yacht: {}             
     + ------------------------- +
 '''
+
+BLACK = '\u001b[30m'
+RED = '\u001b[31m'
+GREEN = '\u001b[32m'
+YELLOW = '\u001b[33m'
+BLUE = '\u001b[34m'
+WHITE = '\u001b[37m'
