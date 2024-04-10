@@ -14,8 +14,8 @@ def encode_client_data(status: str, dice:Optional[List[int]]=None, fixed_index:O
             data["score"]=score
             data["score_index"]=score_index
     
-    data = {"status":status, "data":data}
-    json_data = json.dumps(data, indent = 4)
+    packet = {"status":status, "data":data}
+    json_data = json.dumps(packet, indent = 4)
     
     return json_data.encode()
 
@@ -39,8 +39,8 @@ def encode_server_data(status: str, remaining_roll:Optional[int]=None, dice:Opti
         case "END":
             msg = "You won!"
     
-    data = {"status":status, "data":data, "msg":msg}
-    json_data = json.dumps(data, indent = 4)
+    packet = {"status":status, "data":data, "msg":msg}
+    json_data = json.dumps(packet, indent = 4)
     
     return json_data.encode()
 

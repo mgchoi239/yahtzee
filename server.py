@@ -34,6 +34,7 @@ class Game:
 def handle_client(client_socket, client_address, uuid):
     try:
         recv_data = client_socket.recv(1024)
+        print(recv_data)
         # game.connections.add((uuid, client_socket, client_address))
         # print(uuid, client_socket, client_address)
         # print(recv_data.decode())
@@ -51,6 +52,7 @@ def handle_client(client_socket, client_address, uuid):
                     if game.turn == uuid:
                         data = client_socket.recv(1024)
                         recv_data = utils.decode_client_data(data)
+                        print(f'received data {recv_data}')
                         game.curr_data = recv_data
                         match recv_data["status"]:
                             case "ROLL":
@@ -67,9 +69,11 @@ def handle_client(client_socket, client_address, uuid):
                     else:
                         curr_player_data = game.curr_data
                         if curr_player_data:
-                            match recv_data["status"]:
+                            print('passed here')
+                            print(curr_player_data)
+                            match curr_player_data["status"]:
                                 case "ROLL":
-                                    client_socket.sendall(utils.encode_server_data("WAIT", recv_data['data']['remaining_roll']-1, curr_player_data['data']['dice']))
+                                    client_socket.sendall(utils.encode_server_data("WAIT", curr_player_data['data']['remaining_roll']-1, curr_player_data['data']['dice']))
                                     
                                 case "END_TURN":
                                     client_socket.sendall(utils.encode_server_data("WAIT", 0, curr_player_data['data']['dice']))
@@ -112,5 +116,5 @@ def run_server():
 
 if __name__ == '__main__':
     global game
-    game = Game(1)
+    game = Game(2)
     run_server()

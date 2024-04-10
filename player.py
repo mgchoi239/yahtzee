@@ -6,16 +6,22 @@ import art
 import dice as diceroll
 # import client as client
 
-def valid_input(msg, valid_set, ipt_type):
-    print(valid_set)
-    print(ipt_type)
-    print(msg)
-    ipt = ipt_type(input(msg).lower())
-    print(ipt)
-    while ipt not in valid_set:
+def valid_input_int(msg, valid_set):
+    # print(msg)
+    # print(valid_set)
+    # ipt = input()
+    # while not ipt.isnumeric and int(ipt) not in valid_set:
+    #     print(f"\n>> NOT A VALID INPUT << ({valid_set})")
+    #     ipt = input()
+    # return ipt
+
+    ipt = input(msg).lower()
+    print(ipt, type(ipt))
+    while not ipt.isnumeric() or int(ipt) not in valid_set:
         print(f"\n>> NOT A VALID INPUT << ({valid_set})")
         ipt = input(msg)
-    return ipt
+    print('passed')
+    return int(ipt)
 
 class Player:
     def __init__(self, server):
@@ -57,11 +63,11 @@ class Player:
             possible_out = [score if score != -1 else -1 for score in possible_scores]
             print(art.TABLE.format(*possible_out))
             
-            selected_score_index = valid_input("Select Index:\n", self.unused_board_index, int) 
+            selected_score_index = valid_input_int("Select Index:\n", self.unused_board_index) 
             selected_score = possible_scores[selected_score_index]
             self.unused_board_index.remove(selected_score_index)
             
-            print(f'{selected_score}\n{selected_score_index}\n{fixed_index}')
+            print(f'----\n{selected_score}\n{selected_score_index}\n{fixed_index}')
             self.server.sendall(utils.encode_client_data("END_TURN", score=selected_score, score_index=selected_score_index, fixed_index=fixed_index))
             
         else:

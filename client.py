@@ -57,8 +57,7 @@ if __name__ == '__main__':
                     # print(recv_data["msg"])
                     match recv_data["status"]:
                         case "PREGAME":
-                            a = 1
-                            # print("woah")
+                            print("WAITING FOR OTHER PLAYERS...")
                         case "TURN":
                             p.turn = True
                             # make_move(self, end_my_turn: bool, reroll_remaining: int, dice: list[int], reroll_dice: list[bool])
@@ -104,6 +103,7 @@ if __name__ == '__main__':
                             """
                             TODO: Need to work on updating and displaying Opponents' progress
                             """
+                            print("WAITING FOR THE OPPONENT'S MOVE...")
                         case "END":
                             break
                                     
