@@ -13,8 +13,11 @@ def encode_client_data(status: str, dice:Optional[List[int]]=None, fixed_index:O
         case "END_TURN":
             data["score"]=score
             data["score_index"]=score_index
-    
+        
     packet = {"status":status, "data":data}
+    
+    print(f'----- CLIENT -> SERVER -----\npacket\n')
+    
     json_data = json.dumps(packet, indent = 4)
     
     return json_data.encode()
@@ -33,15 +36,18 @@ def encode_server_data(status: str, remaining_roll:Optional[int]=None, dice:Opti
             data['fixed_index']=fixed_index
             msg = f"You have {remaining_roll} remaining"
         case "WAIT":
+            print(f'received {remaining_roll} {dice}')
             data["remaining_roll"]=remaining_roll
             data["dice"]=dice
             msg = f"Currently opponent's roll"
         case "END":
             msg = "You won!"
-    
+        
     packet = {"status":status, "data":data, "msg":msg}
-    json_data = json.dumps(packet, indent = 4)
     
+    print(f'----- SERVER -> CLIENT -----\npacket\n')
+
+    json_data = json.dumps(packet, indent = 4)
     return json_data.encode()
 
 def decode_server_data(byte_data):

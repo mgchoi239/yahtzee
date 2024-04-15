@@ -69,11 +69,10 @@ def handle_client(client_socket, client_address, uuid):
                     else:
                         curr_player_data = game.curr_data
                         if curr_player_data:
-                            print('passed here')
-                            print(curr_player_data)
                             match curr_player_data["status"]:
                                 case "ROLL":
-                                    client_socket.sendall(utils.encode_server_data("WAIT", curr_player_data['data']['remaining_roll']-1, curr_player_data['data']['dice']))
+                                    # client_socket.sendall(5)
+                                    client_socket.sendall(utils.encode_server_data(status="WAIT", remaining_roll=curr_player_data['data']['remaining_roll']-1, dice=curr_player_data['data']['dice']))
                                     
                                 case "END_TURN":
                                     client_socket.sendall(utils.encode_server_data("WAIT", 0, curr_player_data['data']['dice']))

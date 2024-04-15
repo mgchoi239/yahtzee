@@ -52,7 +52,7 @@ class Player:
         
         print(end_my_turn, roll_remaining, dice, fixed_index)
         if roll_remaining == 3:
-            self.server.sendall(utils.encode_client_data("ROLL", [0]*5, [False]*5, 2))
+            self.server.sendall(utils.encode_client_data(status="ROLL", remaining_roll=roll_remaining, dice=[0]*5, fixed_index=[False]*5))
             diceroll.roll_dice(dice, fixed_index)
             
         elif end_my_turn or not roll_remaining:
@@ -68,13 +68,14 @@ class Player:
             self.unused_board_index.remove(selected_score_index)
             
             print(f'----\n{selected_score}\n{selected_score_index}\n{fixed_index}')
-            self.server.sendall(utils.encode_client_data("END_TURN", score=selected_score, score_index=selected_score_index, fixed_index=fixed_index))
+            
+            self.server.sendall(utils.encode_client_data(status="END_TURN", remaining_roll=roll_remaining, score=selected_score, score_index=selected_score_index, fixed_index=fixed_index))
             
         else:
             # make user to chose which index they want to reroll
             print("loading reroll")
             print()
-            self.server.sendall(utils.encode_client_data("ROLL", dice=dice, fixed_index=fixed_index))
+            self.server.sendall(utils.encode_client_data(status="ROLL", remaining_roll=roll_remaining, dice=dice, fixed_index=fixed_index))
             diceroll.roll_dice(dice, fixed_index)
 
     

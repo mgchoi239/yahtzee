@@ -81,12 +81,13 @@ if __name__ == '__main__':
                                         print("Current Dice: ", dice)
                                         print("WHICH INDEX WOULD YOU LIKE TO FIX:\n")
                                         move = input("PLEASE INPUT EACH INDEX SEPEARTED WITH SPACE: ")
-                                        confirm = valid_input("IS {} CORRECT:\n".format(move), {'y', 'n'}, int)
+                                        confirm = valid_input("IS {} CORRECT:\n".format(move), {'y', 'n'}, str)
 
                                         if confirm == 'y':
+                                            print(f'initial: {fixed_index}')
                                             for str_i in move.split(" "):
                                                 fixed_index[int(str_i)] = True
-                                            print(fixed_index)
+                                            print(f'final: {fixed_index}')
                                             p.make_move(False, remain, dice, fixed_index)
                                     else:
                                         p.make_move(True, remain, dice, [True]*5)
@@ -103,7 +104,15 @@ if __name__ == '__main__':
                             """
                             TODO: Need to work on updating and displaying Opponents' progress
                             """
-                            print("WAITING FOR THE OPPONENT'S MOVE...")
+                            data = server.recv(4096)
+                            recv_data = utils.decode_client_data(data)
+                            if recv_data:
+                                p.turn = False
+                                dice = recv_data["data"]["dice"]
+                                remain = recv_data["data"]["remaining_roll"]
+                                print(f'Other player just rolled. They have {remain} rolls remaining and received the following dices')
+                                diceroll.show_dice(dice)
+
                         case "END":
                             break
                                     
